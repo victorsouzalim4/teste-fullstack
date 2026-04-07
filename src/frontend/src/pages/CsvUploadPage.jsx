@@ -112,6 +112,15 @@ export default function CsvUploadPage() {
     setEditableErrors(updated);
   };
 
+  console.log(editableErrors);
+
+  const removerLinha = (index) => {
+    const newEditableErrors = editableErrors.filter((row) => {
+      return row.index !== index;
+    });
+    setEditableErrors(newEditableErrors);
+  };
+
   return (
     <div className="container mx-auto py-10 space-y-6">
       <Card>
@@ -383,7 +392,7 @@ export default function CsvUploadPage() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8 text-red-500 hover:bg-red-50"
-                          onClick={() => removerLinha(row.id)}
+                          onClick={() => removerLinha(row.index)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
