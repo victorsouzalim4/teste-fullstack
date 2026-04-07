@@ -27,7 +27,7 @@ export default function VeiculosPage() {
   const [clienteId, setClienteId] = useState('');
   const clientes = useQuery({
     queryKey: ['clientes-mini'],
-    queryFn: () => apiGet('/api/clientes?pagina=1&tamanho=10'),
+    queryFn: () => apiGet('/api/clientes?pagina=1&tamanho=100'),
   });
   const veiculos = useQuery({
     queryKey: ['veiculos', clienteId],
@@ -226,7 +226,7 @@ export default function VeiculosPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-4 items-center gap-4">
+              <div className="flex justify-between items-center gap-4">
                 <Label htmlFor="cliente" className="text-right">
                   Cliente
                 </Label>
@@ -236,7 +236,7 @@ export default function VeiculosPage() {
                     setSelectedCar({ ...selectedCar, clienteId: value })
                   }
                 >
-                  <SelectTrigger id="cliente" className="col-span-3">
+                  <SelectTrigger id="cliente" className="w-[75%]">
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>

@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiDelete } from '../api';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ClientesPage() {
   const qc = useQueryClient();
@@ -31,6 +43,10 @@ export default function ClientesPage() {
     mutationFn: (id) => apiDelete(`/api/clientes/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['clientes'] }),
   });
+
+  const [selectedClient, setSelectedClient] = useState(null);
+
+  const handleUpdate = (client) => {};
 
   return (
     <div>
@@ -131,12 +147,20 @@ export default function ClientesPage() {
                   <td>{c.telefone}</td>
                   <td>{c.mensalista ? 'Sim' : 'Não'}</td>
                   <td>
-                    <button
+                    <Button
                       className="btn-ghost"
                       onClick={() => remover.mutate(c.id)}
                     >
                       Excluir
-                    </button>
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        console.log(c);
+                        setSelectedClient(c);
+                      }}
+                    >
+                      Editar
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -144,6 +168,135 @@ export default function ClientesPage() {
           </table>
         )}
       </div>
+
+      <Dialog
+        open={!!selectedClient}
+        onOpenChange={(open) => !open && setSelectedClient(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+            <DialogDescription>
+              Altere as informações do cliente abaixo. Clique em salvar quando
+              terminar.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedClient && (
+            <div className="grid gap-4 py-4">
+              {/* Nome */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="nome" className="text-right">
+                  Nome
+                </Label>
+                <Input
+                  id="nome"
+                  value={selectedClient.nome}
+                  onChange={(e) =>
+                    setSelectedClient({
+                      ...selectedClient,
+                      nome: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+
+              {/* Telefone */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="telefone" className="text-right">
+                  Telefone
+                </Label>
+                <Input
+                  id="telefone"
+                  value={selectedClient.telefone}
+                  onChange={(e) =>
+                    setSelectedClient({
+                      ...selectedClient,
+                      telefone: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+
+              {/* Endereço */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="endereco" className="text-right">
+                  Endereço
+                </Label>
+                <Input
+                  id="endereco"
+                  value={selectedClient.endereco}
+                  onChange={(e) =>
+                    setSelectedClient({
+                      ...selectedClient,
+                      endereco: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+
+              {/* Valor da Mensalidade */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="valorMensalidade" className="text-right">
+                  Mensalidade
+                </Label>
+                <Input
+                  id="valorMensalidade"
+                  type="number"
+                  value={selectedClient.valorMensalidade}
+                  onChange={(e) =>
+                    setSelectedClient({
+                      ...selectedClient,
+                      valorMensalidade: parseFloat(e.target.value),
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+
+              {/* Status Mensalista */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="mensalista" className="text-right">
+                  Mensalista
+                </Label>
+                <div className="col-span-3 flex items-center space-x-2">
+                  <Checkbox
+                    id="mensalista"
+                    checked={selectedClient.mensalista}
+                    onCheckedChange={(checked) =>
+                      setSelectedClient({
+                        ...selectedClient,
+                        mensalista: checked === true,
+                      })
+                    }
+                  />
+                  <Label htmlFor="mensalista" className="text-sm font-normal">
+                    Ativo
+                  </Label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedClient(null)}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              onClick={() => {
+                handleUpdate(selectedClient);
+                setSelectedClient(null);
+              }}
+            >
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
