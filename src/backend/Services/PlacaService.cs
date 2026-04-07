@@ -1,4 +1,3 @@
-
 using System.Text.RegularExpressions;
 
 namespace Parking.Api.Services
@@ -15,7 +14,10 @@ namespace Parking.Api.Services
         // TODO: melhorar regras para Mercosul - aceitar AAA1A23 e similares
         public bool EhValida(string placa)
         {
-            return Regex.IsMatch(placa, "^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$");
+            return (
+                Regex.IsMatch(placa, "^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$")
+                || Regex.IsMatch(placa, "^[A-Z]{4}[0-9]{3}$")
+            );
         }
     }
 }
