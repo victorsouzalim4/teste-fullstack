@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parking.Api.Data;
@@ -14,13 +13,19 @@ namespace Parking.Api.Controllers
     {
         private readonly AppDbContext _db;
         private readonly PlacaService _placa;
-        public VeiculosController(AppDbContext db, PlacaService placa) { _db = db; _placa = placa; }
+
+        public VeiculosController(AppDbContext db, PlacaService placa)
+        {
+            _db = db;
+            _placa = placa;
+        }
 
         [HttpGet]
         public async Task<IActionResult> List([FromQuery] Guid? clienteId = null)
         {
             var q = _db.Veiculos.AsQueryable();
-            if (clienteId.HasValue) q = q.Where(v => v.ClienteId == clienteId.Value);
+            if (clienteId.HasValue)
+                q = q.Where(v => v.ClienteId == clienteId.Value);
             var list = await q.OrderBy(v => v.Placa).ToListAsync();
             return Ok(list);
         }
@@ -29,10 +34,18 @@ namespace Parking.Api.Controllers
         public async Task<IActionResult> Create([FromBody] VeiculoCreateDto dto)
         {
             var placa = _placa.Sanitizar(dto.Placa);
-            if (!_placa.EhValida(placa)) return BadRequest("Placa inválida.");
-            if (await _db.Veiculos.AnyAsync(v => v.Placa == placa)) return Conflict("Placa já existe.");
+            if (!_placa.EhValida(placa))
+                return BadRequest("Placa inválida.");
+            if (await _db.Veiculos.AnyAsync(v => v.Placa == placa))
+                return Conflict("Placa já existe.");
 
-            var v = new Veiculo { Placa = placa, Modelo = dto.Modelo, Ano = dto.Ano, ClienteId = dto.ClienteId };
+            var v = new Veiculo
+            {
+                Placa = placa,
+                Modelo = dto.Modelo,
+                Ano = dto.Ano,
+                ClienteId = dto.ClienteId,
+            };
             _db.Veiculos.Add(v);
             await _db.SaveChangesAsync();
             return CreatedAtAction(nameof(GetById), new { id = v.Id }, v);
@@ -50,10 +63,13 @@ namespace Parking.Api.Controllers
         public async Task<IActionResult> Update(Guid id, [FromBody] VeiculoUpdateDto dto)
         {
             var v = await _db.Veiculos.FindAsync(id);
-            if (v == null) return NotFound();
+            if (v == null)
+                return NotFound();
             var placa = _placa.Sanitizar(dto.Placa);
-            if (!_placa.EhValida(placa)) return BadRequest("Placa inválida.");
-            if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id)) return Conflict("Placa já existe.");
+            if (!_placa.EhValida(placa))
+                return BadRequest("Placa inválida.");
+            if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id))
+                return Conflict("Placa já existe.");
 
             v.Placa = placa;
             v.Modelo = dto.Modelo;
@@ -67,7 +83,8 @@ namespace Parking.Api.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var v = await _db.Veiculos.FindAsync(id);
-            if (v == null) return NotFound();
+            if (v == null)
+                return NotFound();
             _db.Veiculos.Remove(v);
             await _db.SaveChangesAsync();
             return NoContent();

@@ -7,8 +7,20 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function VeiculosPage() {
   const qc = useQueryClient();
@@ -48,6 +60,20 @@ export default function VeiculosPage() {
       setForm((f) => ({ ...f, clienteId: clientes.data.itens[0].id }));
     }
   }, [clientes.data]);
+
+  const [selectedCar, setSelectedCar] = useState(null);
+
+  const handleUpdate = (car) => {
+    update.mutate({
+      id: car.id,
+      data: {
+        placa: car.placa,
+        modelo: car.modelo,
+        ano: car.ano,
+        clienteId: car.clienteId,
+      },
+    });
+  };
 
   return (
     <div>
@@ -131,21 +157,7 @@ export default function VeiculosPage() {
                     <button
                       className="btn-ghost"
                       onClick={() => {
-                        const novoModelo = prompt(
-                          'Novo modelo',
-                          v.modelo || '',
-                        );
-                        if (novoModelo === null) return;
-                        // TODO: trocar cliente via select modal (deixo simples aqui)
-                        update.mutate({
-                          id: v.id,
-                          data: {
-                            placa: v.placa,
-                            modelo: novoModelo,
-                            ano: v.ano,
-                            clienteId,
-                          },
-                        });
+                        setSelectedCar(v);
                       }}
                     >
                       Editar
@@ -167,6 +179,97 @@ export default function VeiculosPage() {
           recarregar a página (React Query já invalida a lista).
         </p>
       </div>
+
+      <Dialog
+        open={!!selectedCar}
+        onOpenChange={(open) => !open && setSelectedCar(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Veículo</DialogTitle>
+            <DialogDescription>
+              Altere as informações do veículo abaixo. Clique em salvar quando
+              terminar.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCar && (
+            <div className="grid gap-4 py-4">
+              {/* Campo Modelo */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="modelo" className="text-right">
+                  Modelo
+                </Label>
+                <Input
+                  id="modelo"
+                  value={selectedCar.modelo}
+                  onChange={(e) =>
+                    setSelectedCar({ ...selectedCar, modelo: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+
+              {/* Campo Ano */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="ano" className="text-right">
+                  Ano
+                </Label>
+                <Input
+                  id="ano"
+                  type="number"
+                  value={selectedCar.ano}
+                  onChange={(e) =>
+                    setSelectedCar({ ...selectedCar, ano: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cliente" className="text-right">
+                  Cliente
+                </Label>
+                <Select
+                  value={selectedCar?.clienteId}
+                  onValueChange={(value) =>
+                    setSelectedCar({ ...selectedCar, clienteId: value })
+                  }
+                >
+                  <SelectTrigger id="cliente" className="col-span-3">
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Clientes disponíveis</SelectLabel>
+                      {clientes.data?.itens?.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedCar(null)}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              onClick={() => {
+                handleUpdate(selectedCar); // Sua função de atualização
+                setSelectedCar(null);
+              }}
+            >
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
