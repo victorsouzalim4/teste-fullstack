@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPost, apiDelete } from '../api';
+import { apiGet, apiPost, apiDelete, apiPut } from '../api';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ export default function ClientesPage() {
   const qc = useQueryClient();
   const [filtro, setFiltro] = useState('');
   const [mensalista, setMensalista] = useState('all');
+  const [selectedClient, setSelectedClient] = useState(null);
   const [form, setForm] = useState({
     nome: '',
     telefone: '',
@@ -44,9 +45,26 @@ export default function ClientesPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['clientes'] }),
   });
 
-  const [selectedClient, setSelectedClient] = useState(null);
+  const update = useMutation({
+    mutationFn: ({ id, data }) => apiPut(`/api/clientes/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clientes'] });
+      setSelectedClient(null);
+    },
+  });
 
-  const handleUpdate = (client) => {};
+  const handleUpdate = (client) => {
+    update.mutate({
+      id: client.id,
+      data: {
+        nome: client.nome,
+        telefone: client.telefone,
+        endereco: client.endereco,
+        mensalista: client.mensalista,
+        valorMensalidade: client.valorMensalidade,
+      },
+    });
+  };
 
   return (
     <div>
@@ -288,8 +306,8 @@ export default function ClientesPage() {
             <Button
               type="submit"
               onClick={() => {
-                handleUpdate(selectedClient);
-                setSelectedClient(null);
+                const client = selectedClient;
+                handleUpdate(client);
               }}
             >
               Salvar Alterações
