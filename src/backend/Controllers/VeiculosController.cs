@@ -86,10 +86,31 @@ namespace Parking.Api.Controllers
             if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id))
                 return Conflict("Placa já existe.");
 
+            if (v.ClienteId != dto.ClienteId)
+            {
+                var vinculo = await _db.VinculosVeiculos.FirstOrDefaultAsync(x =>
+                    x.ClienteId == v.ClienteId && x.VeiculoId == id && x.DataFim == null
+                );
+                vinculo.DataFim = DateTime.UtcNow.Date;
+
+                var c = await _db.Clientes.FindAsync(dto.ClienteId);
+
+                var novoVinculo = new VinculoVeiculo
+                {
+                    ValorMensalidade = c.ValorMensalidade,
+                    ClienteId = dto.ClienteId,
+                    VeiculoId = v.Id,
+                    DataInicio = DateTime.UtcNow.Date,
+                    DataFim = null,
+                };
+
+                _db.VinculosVeiculos.Add(novoVinculo);
+            }
+
             v.Placa = placa;
             v.Modelo = dto.Modelo;
             v.Ano = dto.Ano;
-            v.ClienteId = dto.ClienteId; // troca de cliente permitida
+            v.ClienteId = dto.ClienteId;
             await _db.SaveChangesAsync();
             return Ok(v);
         }
