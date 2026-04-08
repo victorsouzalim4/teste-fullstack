@@ -44,6 +44,8 @@ $$\text{Valor Total} = \sum_{v=1}^{n} \left( \text{Dias}_v \times \frac{\text{Va
 
 - **Vantagem:** Trata automaticamente cenários onde o cliente utiliza o veículo em períodos alternados no mesmo mês, somando as fatias de tempo de forma transparente.
 
+![Diagrama de Arquitetura](./assets/diagrama-faturamento.png)
+
 ---
 
 ## 🐞 2. Backlog de Erros e Pontos de Atenção (Bugs Detectados)
