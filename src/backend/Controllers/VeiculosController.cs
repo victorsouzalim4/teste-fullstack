@@ -41,12 +41,27 @@ namespace Parking.Api.Controllers
 
             var v = new Veiculo
             {
+                Id = Guid.NewGuid(),
                 Placa = placa,
                 Modelo = dto.Modelo,
                 Ano = dto.Ano,
                 ClienteId = dto.ClienteId,
             };
+
+            var c = await _db.Clientes.FindAsync(dto.ClienteId);
+
+            var vinculo = new VinculoVeiculo
+            {
+                ValorMensalidade = c.ValorMensalidade,
+                ClienteId = dto.ClienteId,
+                VeiculoId = v.Id,
+                DataInicio = DateTime.UtcNow.Date,
+                DataFim = null,
+            };
+
             _db.Veiculos.Add(v);
+            _db.VinculosVeiculos.Add(vinculo);
+
             await _db.SaveChangesAsync();
             return CreatedAtAction(nameof(GetById), new { id = v.Id }, v);
         }

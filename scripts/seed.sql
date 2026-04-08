@@ -6,6 +6,7 @@ drop table if exists "public"."fatura_veiculo" cascade;
 drop table if exists "public"."fatura" cascade;
 drop table if exists "public"."veiculo" cascade;
 drop table if exists "public"."cliente" cascade;
+drop table if exists "public"."vinculo_veiculo" cascade;
 
 create table "public"."cliente"(
   id uuid primary key default uuid_generate_v4(),
@@ -42,6 +43,20 @@ create table "public"."fatura_veiculo"(
   veiculo_id uuid not null references "public"."veiculo"(id),
   primary key (fatura_id, veiculo_id)
 );
+
+CREATE TABLE vinculo_veiculo (
+    id uuid primary key default uuid_generate_v4(),
+    veiculo_id uuid not null references "public"."veiculo"(id),
+    cliente_id uuid not null references "public"."cliente"(id),
+    data_inicio DATE NOT NULL,
+    data_fim DATE,
+      valor_mensalidade numeric(12,2) NULL CHECK (valor_mensalidade >= 0),
+    
+    CONSTRAINT data_valida CHECK (data_fim IS NULL OR data_fim >= data_inicio)
+);
+
+CREATE INDEX idx_vinculo_cliente_periodo ON vinculo_veiculo (cliente_id, data_inicio, data_fim);
+CREATE INDEX idx_vinculo_veiculo_ativo ON vinculo_veiculo (veiculo_id) WHERE data_fim IS NULL;
 
 -- Clientes
 insert into "public"."cliente"(id, nome, telefone, endereco, mensalista, valor_mensalidade) values
