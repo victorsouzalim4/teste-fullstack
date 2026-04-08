@@ -10,57 +10,96 @@ namespace Parking.Api.Services
 
         public FaturamentoService(AppDbContext db) => _db = db;
 
-        // BUG proposital: usa dono ATUAL do veículo em vez do dono NA DATA DE CORTE
         public async Task<List<Fatura>> GerarAsync(
             string competencia,
             CancellationToken ct = default
         )
         {
-            // competencia formato yyyy-MM
             var part = competencia.Split('-');
             var ano = int.Parse(part[0]);
             var mes = int.Parse(part[1]);
-            var ultimoDia = DateTime.DaysInMonth(ano, mes);
-            var corte = new DateTime(ano, mes, ultimoDia, 23, 59, 59, DateTimeKind.Utc);
 
-            var mensalistas = await _db
-                .Clientes.Where(c => c.Mensalista)
-                .AsNoTracking()
-                .ToListAsync(ct);
+            var inicioMes = new DateTime(ano, mes, 1, 0, 0, 0, DateTimeKind.Utc);
+            var fimMes = new DateTime(
+                ano,
+                mes,
+                DateTime.DaysInMonth(ano, mes),
+                23,
+                59,
+                59,
+                DateTimeKind.Utc
+            );
 
-            var criadas = new List<Fatura>();
+            var clientes = await _db.Clientes.ToListAsync(ct);
+            var faturasGeradas = new List<Fatura>();
 
-            foreach (var cli in mensalistas)
+            foreach (var cli in clientes)
             {
-                var existente = await _db.Faturas.FirstOrDefaultAsync(
-                    f => f.ClienteId == cli.Id && f.Competencia == competencia,
-                    ct
-                );
-                if (existente != null)
-                    continue; // idempotência simples
+                if (
+                    await _db.Faturas.AnyAsync(
+                        f => f.ClienteId == cli.Id && f.Competencia == competencia,
+                        ct
+                    )
+                )
+                    continue;
 
-                var veiculosAtuaisDoCliente = await _db
-                    .Veiculos.Where(v => v.ClienteId == cli.Id)
-                    .Select(v => v.Id)
+                var vinculosNoMes = await _db
+                    .VinculosVeiculos.AsNoTracking()
+                    .Where(v =>
+                        v.ClienteId == cli.Id
+                        && v.ValorMensalidade != null
+                        && v.DataInicio <= fimMes
+                        && (v.DataFim == null || v.DataFim >= inicioMes)
+                    )
                     .ToListAsync(ct);
 
-                var fat = new Fatura
+                if (!vinculosNoMes.Any())
+                    continue;
+
+                decimal valorTotalFatura = 0;
+                var detalhesVeiculos = new List<FaturaVeiculo>();
+
+                foreach (var vinculo in vinculosNoMes)
                 {
+                    var dataEfetivaInicio =
+                        vinculo.DataInicio > inicioMes ? vinculo.DataInicio : inicioMes;
+
+                    var dataEfetivaFim =
+                        (vinculo.DataFim == null || vinculo.DataFim > fimMes)
+                            ? fimMes
+                            : vinculo.DataFim.Value;
+
+                    int diasUso = (dataEfetivaFim.Date - dataEfetivaInicio.Date).Days + 1;
+
+                    if (diasUso > 30)
+                        diasUso = 30;
+
+                    decimal valorMensalidade = vinculo.ValorMensalidade ?? 0m;
+                    decimal valorProporcional = (valorMensalidade / 30m) * diasUso;
+
+                    valorTotalFatura += valorProporcional;
+
+                    detalhesVeiculos.Add(new FaturaVeiculo { VeiculoId = vinculo.VeiculoId });
+                }
+
+                var novaFatura = new Fatura
+                {
+                    Id = Guid.NewGuid(),
                     Competencia = competencia,
                     ClienteId = cli.Id,
-                    Valor = cli.ValorMensalidade ?? 0m,
-                    Observacao = "BUG: usando dono atual do veículo",
+                    Valor = Math.Round(valorTotalFatura, 2),
+                    CriadaEm = DateTime.UtcNow,
+                    Observacao = $"Faturamento proporcional baseado em histórico de vínculos.",
+                    Veiculos = detalhesVeiculos,
                 };
 
-                foreach (var id in veiculosAtuaisDoCliente)
-                    fat.Veiculos.Add(new FaturaVeiculo { FaturaId = fat.Id, VeiculoId = id });
-
-                _db.Faturas.Add(fat);
-                criadas.Add(fat);
+                _db.Faturas.Add(novaFatura);
+                faturasGeradas.Add(novaFatura);
             }
 
             await _db.SaveChangesAsync(ct);
-            return criadas;
+
+            return faturasGeradas;
         }
     }
 }

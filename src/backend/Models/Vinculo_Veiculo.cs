@@ -8,7 +8,6 @@ namespace Parking.Api.Models
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required, MaxLength(8)]
         public decimal? ValorMensalidade { get; set; }
 
         public DateTime DataInicio { get; set; } = DateTime.UtcNow;
